@@ -23,10 +23,10 @@ type PostgressStore struct{
 	db *sql.DB
 } 
 func NewPostgressStore() (*PostgressStore, error){
-	conStr:= "user=postgres dbname=postgres password=gobank sslmode=disable"
+	conStr:= "user=postgres dbname=postgres host=database-2.c5i8mwka8jer.us-east-1.rds.amazonaws.com port=5432 password=mygobank "
 	db, err:= sql.Open("postgres",conStr)
 	if err!=nil{
-		return nil,err
+		panic(err)
 	}
 	if err:=db.Ping();err!=nil{
 		return nil,err

@@ -16,6 +16,6 @@ func main(){
 	log.Fatal("Error",err)
 	log.Fatal("Error",er)
 	}
-server:= NewApiServer(":3000",store)
+server:= NewApiServer(":8080",store)
 server.Run()
 }

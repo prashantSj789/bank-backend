@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"errors"
+	"image"
 
 	"fmt"
 	"log"
@@ -11,9 +12,10 @@ import (
 	"os"
 	"strconv"
 	"time"
-
+    "github.com/skip2/go-qrcode"
 	"github.com/golang-jwt/jwt/v5"
-	"github.com/gorilla/handlers"
+	
+	"github.com/rs/cors"
 	"github.com/gorilla/mux"
 )
 
@@ -32,6 +34,7 @@ type ApiError struct {
 }
 
 func makemuxhandlefunc(f apiFunc) http.HandlerFunc {
+	
 	return func(w http.ResponseWriter, r *http.Request) {
 		if err := f(w, r); err != nil {
 			WriteJSON(w, http.StatusBadRequest, ApiError{Error: err.Error()})
@@ -62,11 +65,18 @@ func (s *APIServer) Run() {
 
 	log.Println("JSON Api Running on port:", s.listenAddr)
 
-	http.ListenAndServe(s.listenAddr, handlers.CORS(
-		handlers.AllowedOrigins([]string{"*"}),
-		handlers.AllowedMethods([]string{"GET", "POST", "PUT", "OPTIONS"}),
-		handlers.AllowedHeaders([]string{"*"}),
-	)(router))
+    // Setup CORS middleware options
+    c := cors.New(cors.Options{
+        AllowedOrigins:   []string{"*"}, // Allow specific origin
+        AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+        AllowedHeaders:   []string{"*"},
+        AllowCredentials: true,
+    })
+
+    // Use the CORS middleware with the router
+    handler := c.Handler(router)
+  
+	http.ListenAndServe(s.listenAddr,handler)
 
 }
 func (s *APIServer) handleAccount(w http.ResponseWriter, r *http.Request) error {
@@ -116,6 +126,7 @@ func (s *APIServer) handleCreateAccount(w http.ResponseWriter, r *http.Request) 
 	if err := s.store.CreateAccount(account); err != nil {
 		return err
 	}
+	QrGenerator(1234565)
 	return WriteJSON(w, http.StatusOK, account)
 
 }
@@ -279,4 +290,15 @@ func validateToken(w http.ResponseWriter, r *http.Request,pin string) (error,int
 	}
 	accn:= claims["accountNumber"].(float64)
 	return nil,int(accn)
+}
+func  QrGenerator(n int) image.Image{
+	qrcode,_:=qrcode.New(string(n),qrcode.Medium)
+    filename:= fmt.Sprintf("%v.png", n)
+	err := qrcode.WriteFile(256, filename)
+	if err != nil {
+	 fmt.Println(err.Error())
+	 return nil
+	}
+	fmt.Println(fmt.Sprintf("QR code generated and saved as %v.png", n))
+ return nil
 }

@@ -14,6 +14,10 @@ type CreateAccountRequest struct{
 	PinCode string `json:"pinCode"`
 	Email   string  `json"email"`
 }
+type simpleQRCode struct {
+    Content string
+    Size        int
+}
 
 type transactionRequest struct{
 	Number int64`json:"accountNumber"`

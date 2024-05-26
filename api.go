@@ -3,18 +3,13 @@ package main
 import (
 	"encoding/json"
 	"errors"
-	"image"
-
 	"fmt"
 	"log"
 	"net/http"
-
 	"os"
 	"strconv"
 	"time"
-    "github.com/skip2/go-qrcode"
 	"github.com/golang-jwt/jwt/v5"
-	
 	"github.com/rs/cors"
 	"github.com/gorilla/mux"
 )
@@ -126,7 +121,7 @@ func (s *APIServer) handleCreateAccount(w http.ResponseWriter, r *http.Request) 
 	if err := s.store.CreateAccount(account); err != nil {
 		return err
 	}
-	QrGenerator(1234565)
+
 	return WriteJSON(w, http.StatusOK, account)
 
 }
@@ -290,15 +285,4 @@ func validateToken(w http.ResponseWriter, r *http.Request,pin string) (error,int
 	}
 	accn:= claims["accountNumber"].(float64)
 	return nil,int(accn)
-}
-func  QrGenerator(n int) image.Image{
-	qrcode,_:=qrcode.New(string(n),qrcode.Medium)
-    filename:= fmt.Sprintf("%v.png", n)
-	err := qrcode.WriteFile(256, filename)
-	if err != nil {
-	 fmt.Println(err.Error())
-	 return nil
-	}
-	fmt.Println(fmt.Sprintf("QR code generated and saved as %v.png", n))
- return nil
 }

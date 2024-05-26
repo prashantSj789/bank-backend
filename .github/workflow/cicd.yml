@@ -1,10 +1,9 @@
-name: deploy go bank
+name: Deploy Go Application
 
 on:
   push:
     branches:
-      -main
-
+      - deploy-to-ec2
 
 jobs:
   build:
@@ -13,16 +12,20 @@ jobs:
       - name: Checkout Source
         uses: actions/checkout@v4
       - name: Create .env file
-        run:  echo "PORT = ${{ secrets.PORT }}" >> .env
-      - name: login to docker hub
-        run: docker login -u ${{ secrets.DOCKER_USER_NAME }} -p ${{ secrets.DOCKER_PASSWORD }}
+        run: echo "PORT=${{ secrets.PORT }}" >> .env
+      - name: Login to docker hub
+        run: docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
+      - name: Build docker image
+        run: docker build -t kubeprashant798/go-bank .
+      - name: Push image to docker hub
+        run: docker push kubeprashant798/go-bank:latest
   deploy:
     needs: build
-    runs-on: ip-172-31-22-24
+    runs-on: self-hosted
     steps:
-      - name: pull docker image
-      - run: docker pull kubeprashant798/go-bank:latest
-      - name: delete old container 
-      - run: docker rm -f go-bank-container
-      - name: Run docker container
-      - run: docker run -d -p 8080:8080 --name go-bank-container kubeprashant798/go-bank
+      - name: Pull docker image
+        run: docker pull kubeprashant798/go-bank:latest
+      - name: Delete old container
+        run: docker rm -f go-app-container  
+      - name: Run docker container          
+        run: docker run -d -p 4040:4040 --name go-app-container 

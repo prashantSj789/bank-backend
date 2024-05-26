@@ -18,7 +18,7 @@ jobs:
         run: docker login -u ${{ secrets.DOCKER_USER_NAME }} -p ${{ secrets.DOCKER_PASSWORD }}
   deploy:
     needs: build
-    runs-on: self-hosted
+    runs-on: ip-172-31-22-24
     steps:
       - name: pull docker image
       - run: docker pull kubeprashant798/go-bank:latest

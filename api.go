@@ -247,7 +247,7 @@ func (s *APIServer) HandleCheckBalance(w http.ResponseWriter,r *http.Request) er
 }
 func CreateJWT(account *Account) (string, error) {
 	claims := jwt.MapClaims{
-		"expiresAt":     jwt.NewNumericDate(time.Now().Local().Add(time.Minute * 2)),
+		"expiresAt":     jwt.NewNumericDate(time.Now().Local().Add(time.Minute * 10)),
 		"accountNumber": account.Number,
 	}
 	secret := os.Getenv("SECRET")

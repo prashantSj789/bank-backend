@@ -69,7 +69,7 @@ func (s *PostgressStore) CreateAccount(ac *Account) error{
 	query:= `insert into bankaccount
 	(first_name, last_name, number, balance, createad_at, pin_code, email)
 	values ($1, $2, $3, $4, $5, $6, $7)`
-	resp, err := s.db.Query(
+	_, err := s.db.Query(
 		query,
 		ac.FirstName,
 		ac.LastName,
@@ -82,8 +82,7 @@ func (s *PostgressStore) CreateAccount(ac *Account) error{
 	if  err!=nil {
 		return err;
 	}
-	fmt.Printf("%+v/n",resp)
-	return nil
+   return nil
 }
 func (s *PostgressStore) CreateTransaction(tr *transaction) error{
   query:=`insert into transaction

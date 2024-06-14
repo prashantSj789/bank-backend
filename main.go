@@ -1,7 +1,7 @@
 package main
 
 import (
-
+	"fmt"
 	"log"
 )
 
@@ -18,5 +18,5 @@ func main(){
 	}
 server:= NewApiServer(":8080",store)
 server.Run()
-
+ fmt.Println("hi there")
 }

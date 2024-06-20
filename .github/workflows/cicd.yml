@@ -28,4 +28,4 @@ jobs:
       - name: delete old container 
         run: docker rm -f go-bank-container
       - name: Run docker container
-        run: docker run -d -p 8080:8080 --name go-bank-container kubeprashant798/go-bank
+        run: docker run -d -p 8080:8080 --name go-bank-container kubeprashant798/go-bank sleep infinity

@@ -57,7 +57,10 @@ func (s *APIServer) Run() {
 	router.HandleFunc("/transaction", makemuxhandlefunc(s.handleTransferAccount))
 	router.HandleFunc("/transaction/history",makemuxhandlefunc(s.HandleGetTransactionHistory))
 	router.HandleFunc("/balance",makemuxhandlefunc(s.HandleCheckBalance))
-
+	router.HandleFunc("/connect",makemuxhandlefunc(s.HandleConnectionRequest))
+    router.HandleFunc("/requests",makemuxhandlefunc(s.HandleGetallRequests))
+	router.HandleFunc("/accept/{id}",makemuxhandlefunc(s.HandleAcceptRequest))
+	router.HandleFunc("/suggestions",makemuxhandlefunc(s.HandleSuggestion))
 	log.Println("JSON Api Running on port:", s.listenAddr)
 
     // Setup CORS middleware options
@@ -114,9 +117,13 @@ func (s *APIServer) handleCreateAccount(w http.ResponseWriter, r *http.Request) 
 	if err := json.NewDecoder(r.Body).Decode(CreateAccountRequest); err != nil {
 		return err
 	}
-	account, err := NewAccount(CreateAccountRequest.FirstName, CreateAccountRequest.LastName, CreateAccountRequest.PinCode, CreateAccountRequest.Email)
+	account, err := NewAccount(CreateAccountRequest.FirstName, CreateAccountRequest.LastName, CreateAccountRequest.PinCode, CreateAccountRequest.UserName,CreateAccountRequest.Email)
 	if err != nil {
 		return err
+	}
+    acc,err := s.store.GetAccountByUserName(account.UserName)
+	if acc!=nil{
+		return fmt.Errorf("user already exists")
 	}
 	if err := s.store.CreateAccount(account); err != nil {
 		return err
@@ -161,7 +168,7 @@ func (s *APIServer) handleTransferAccount(w http.ResponseWriter, r *http.Request
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		return err
 	}
-    err,aac:=validateToken(w,r,req.PinCode)
+    err,aac:=validateToken(w,r)
 	if err!=nil{
 		return err
 	}
@@ -203,7 +210,7 @@ func (s *APIServer) HandleGetTransactionHistory(w http.ResponseWriter,r *http.Re
 		return fmt.Errorf("No Pin Code Entered")
 	}
 	
-	err,acc:=validateToken(w,r,pin)
+	err,acc:=validateToken(w,r)
 	if err!=nil {
 		return err
 	}
@@ -228,7 +235,7 @@ func (s *APIServer) HandleCheckBalance(w http.ResponseWriter,r *http.Request) er
 	if pin == ""{
 		return fmt.Errorf("No Pin Code Entered")
 	}
-	err,acc:=validateToken(w,r,pin)
+	err,acc:=validateToken(w,r)
 	if err!=nil {
 		return err
 	}
@@ -245,6 +252,98 @@ func (s *APIServer) HandleCheckBalance(w http.ResponseWriter,r *http.Request) er
 	}
    return WriteJSON(w,http.StatusOK,bal)
 }
+
+func (s *APIServer) HandleConnectionRequest(w http.ResponseWriter, r *http.Request) error{
+    if r.Method!="POST"{
+		return fmt.Errorf("Method not allowed:%s",r.Method)
+	}
+	req:= new(ConnectionRequest)
+    err,acc:=validateToken(w,r)
+	if err!=nil{
+		return err
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		return err
+	}
+	sender,err:=s.store.GetAccountByNumber(acc)
+	if err!=nil{
+		return err
+	}
+	friendreq,err:=NewRequest(sender.UserName,req.UserName)
+	if err!=nil{
+		return err
+	}
+    err=s.store.CreateRequest(friendreq)
+	if err!=nil{
+		return err
+	}
+	return WriteJSON(w,http.StatusOK,"Friend request sent succesfully")
+}
+
+func (s *APIServer) HandleGetallRequests(w http.ResponseWriter, r *http.Request) error {
+	if r.Method!="GET"{
+		return fmt.Errorf("Method not allowed:%s",r.Method)
+	}
+	err,ac:=validateToken(w,r)
+	if err!=nil{
+		return err
+	}
+	accn,err:=s.store.GetAccountByNumber(ac)
+	if err!=nil{
+		return err
+	}
+	req,err:= s.store.Getrequests(accn.UserName)
+	if err!=nil{
+		return err
+	}
+	return WriteJSON(w,http.StatusOK,req)
+}
+
+func (s *APIServer) HandleAcceptRequest(w http.ResponseWriter,r *http.Request) error {
+	if r.Method!="GET"{
+		return fmt.Errorf("Method not allowed:%s",r.Method)
+	}
+	idstr:=mux.Vars(r)["id"]
+	req,err:=s.store.GetRequestbyId(idstr)
+	if err!=nil{
+		return err
+	}
+	friend,err:=NewFriend(req.Reciever,req.Sender)
+	if err!=nil{
+		return err 
+	}
+	err=s.store.Createfriends(friend)
+	if err!=nil{
+		return err
+	}
+	err=s.store.DeleteRequestbyId(idstr)
+	if err!=nil{
+		return err 
+	}
+    return WriteJSON(w,http.StatusOK,"Connection Request Accepted"+req.Sender+" is now your connection you can now request money and make direct transactions.")
+}
+
+func (s *APIServer) HandleSuggestion(w http.ResponseWriter,r *http.Request) error{
+	if r.Method!="GET"{
+		return fmt.Errorf("Method not allowed:%s",r.Method)
+	}
+	err,acc:=validateToken(w,r)
+	if err!=nil{
+		return err
+	}
+	user,err:=s.store.GetAccountByNumber(acc)
+	if err!=nil{
+		return err
+	}
+	err,graph:=s.store.MakeFriendsGraph()
+	fmt.Println(graph)
+	if err!=nil{
+		return err
+	}
+	suggestions:=SuggestFriends(graph,user.UserName)
+	return WriteJSON(w,http.StatusOK,suggestions)
+}
+
 func CreateJWT(account *Account) (string, error) {
 	claims := jwt.MapClaims{
 		"expiresAt":     jwt.NewNumericDate(time.Now().Local().Add(time.Minute * 10)),
@@ -254,7 +353,7 @@ func CreateJWT(account *Account) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	return token.SignedString([]byte(secret))
 }
-func validateToken(w http.ResponseWriter, r *http.Request,pin string) (error,int) {
+func validateToken(w http.ResponseWriter, r *http.Request) (error,int) {
 
 	if r.Header["Token"] == nil {
 		fmt.Fprintf(w, "can not find token in header")
@@ -286,3 +385,4 @@ func validateToken(w http.ResponseWriter, r *http.Request,pin string) (error,int
 	accn:= claims["accountNumber"].(float64)
 	return nil,int(accn)
 }
+

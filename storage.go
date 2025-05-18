@@ -35,7 +35,7 @@ type PostgressStore struct {
 
 
 func NewPostgressStore() (*PostgressStore, error) {
-	conStr := "postgresql://postgres:eLORsiMhFormmAIhLPTtrBXzEWOoGDGp@roundhouse.proxy.rlwy.net:53001/railway"
+	conStr := "postgresql://postgres:arofsjaRYgsEWzwikDNgpVPxEveGosOF@shortline.proxy.rlwy.net:34456/railway"
 
 	db, err := sql.Open("postgres", conStr)
 	if err != nil {

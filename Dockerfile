@@ -11,13 +11,13 @@ RUN go mod tidy
 
 COPY . .
 
-RUN go build -o go-bank .
+RUN go build -o job-portal .
 
-RUN chmod +x ./go-bank
+RUN chmod +x ./job-portal
 
 EXPOSE 8080
 
-ENTRYPOINT [ "./go-bank" ]
+ENTRYPOINT [ "./job-portal" ]
 
 
 

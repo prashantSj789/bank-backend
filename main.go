@@ -18,7 +18,11 @@ func main(){
 	log.Fatal("Error",err1)
 	log.Fatal("Error",err2)
 	}
+// server2:=NewFberServer(":3000",store)	
 server:= NewApiServer(":8080",store)
+// server2.Runfiber() 
 server.Run()
  fmt.Println("hi there")
+
+
 }

@@ -12,6 +12,7 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/rs/cors"
 	"github.com/gorilla/mux"
+	_"github.com/gofiber/fiber/v2"
 )
 
 
@@ -41,6 +42,18 @@ type APIServer struct {
 	listenAddr string
 	store      storage
 }
+// type ApiServer2 struct {
+// 	listenAddr1 string
+// 	store1      storage
+// }
+
+// func NewFberServer(listenAddr string, store storage) *ApiServer2 {
+// 	return &ApiServer2{
+// 		listenAddr1: listenAddr,
+// 		store1:      store,
+// 	}	
+// }
+
 
 func NewApiServer(listenAddr string, store storage) *APIServer {
 	return &APIServer{
@@ -48,6 +61,19 @@ func NewApiServer(listenAddr string, store storage) *APIServer {
 		store:      store,
 	}
 }
+
+// func(s *ApiServer2)  Runfiber(){
+// 	app := fiber.New()
+// 	app.Get("/",s.fiberDefault)
+// 	app.Listen(s.listenAddr1)
+// 	fmt.Println("JSON API running on Port:%s",s.listenAddr1)
+// }
+
+// func (s *ApiServer2) fiberDefault(c *fiber.Ctx) error{
+// 	return c.JSON(fiber.Map{"message":"Hello World"})
+// }
+
+
 func (s *APIServer) Run() {
 	router := mux.NewRouter()
 
@@ -346,7 +372,7 @@ func (s *APIServer) HandleSuggestion(w http.ResponseWriter,r *http.Request) erro
 
 func CreateJWT(account *Account) (string, error) {
 	claims := jwt.MapClaims{
-		"expiresAt":     jwt.NewNumericDate(time.Now().Local().Add(time.Minute * 10)),
+		"expiresAt":     jwt.NewNumericDate(time.Now().Local().Add(time.Minute * 15)),
 		"accountNumber": account.Number,
 	}
 	secret := os.Getenv("SECRET")
